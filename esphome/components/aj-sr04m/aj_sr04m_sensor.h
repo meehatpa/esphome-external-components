@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include "esphome/core/component.h"
 #include "esphome/components/sensor/sensor.h"
 #include "esphome/components/uart/uart.h"
@@ -7,32 +9,19 @@
 namespace esphome {
 namespace aj_sr04m {
 
-class AJ_SR04M_Sensor : public sensor::Sensor, public PollingComponent {
+
+class Aj_sr04mComponent : public sensor::Sensor, public PollingComponent, public uart::UARTDevice {
  public:
-  AJ_SR04M_Sensor(uart::UARTComponent *uart) : uart_(uart) {}
 
-  void update() override {
-    uint8_t frame[4];
-    int pos = 0;
-
-    uart_->write(0x01);
-
-    while (available()) {
-      frame[pos++] = read();
-      if(pos == 4) {
-        uint8_t checksum = frame[0] + frame[1] + frame[2];
-        ESP_LOGV(TAG, "Reply %x:%x:%x:%x", frame[0], frame[1], frame[2], frame[3]);
-        if (checksum == frame[3]) {
-          uint16_t distance = encode_uint16(frame[1], frame[2]);
-          publish_state(distance);
-        }
-        break;
-      }
-    }
-  }
+  // ========== INTERNAL METHODS ==========
+  void update() override;
+  void loop() override;
+  void dump_config() override;
 
  protected:
-   uart::UARTComponent *uart_;
+  void check_buffer_();
+
+  std::vector<uint8_t> buffer_;
 };
 
 }  // namespace aj_sr04m
